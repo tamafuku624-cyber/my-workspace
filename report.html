@@ -63,7 +63,6 @@
 </table>
 
 <script>
-    // ページ読み込み時に実行
     window.onload = function() {
         document.getElementById('date').valueAsDate = new Date();
         displayLogs();
@@ -74,7 +73,7 @@
         const taku = parseInt(document.getElementById('taku').value) || 0;
         const neko = parseInt(document.getElementById('neko').value) || 0;
         
-        // ここで単価計算！
+        // 正確に単価「円」で計算しています
         const subtotal = (taku * 170) + (neko * 60);
 
         if(!date) return alert("日付を入れてください");
@@ -84,7 +83,6 @@
         logs.push(newData);
         localStorage.setItem('deliveryLogs', JSON.stringify(logs));
 
-        // 入力欄リセット
         document.getElementById('taku').value = "";
         document.getElementById('neko').value = "";
         displayLogs();
@@ -94,15 +92,12 @@
         let logs = JSON.parse(localStorage.getItem('deliveryLogs')) || [];
         const body = document.getElementById('log-body');
         body.innerHTML = "";
-
         let totalTaku = 0, totalNeko = 0, monthTotal = 0;
 
-        // 日付順に並べ替え
         logs.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((log, index) => {
             totalTaku += log.taku;
             totalNeko += log.neko;
             monthTotal += log.subtotal;
-
             body.innerHTML += `
                 <tr>
                     <td>${log.date.substring(5)}</td>
@@ -110,10 +105,8 @@
                     <td>${log.neko}</td>
                     <td>${log.subtotal.toLocaleString()}</td>
                     <td><button class="delete-btn" onclick="deleteLog(${index})">×</button></td>
-                </tr>
-            `;
+                </tr>`;
         });
-
         document.getElementById('total-taku-count').innerText = totalTaku;
         document.getElementById('total-neko-count').innerText = totalNeko;
         document.getElementById('month-total').innerText = monthTotal.toLocaleString();
@@ -126,6 +119,5 @@
         displayLogs();
     }
 </script>
-
 </body>
 </html>
