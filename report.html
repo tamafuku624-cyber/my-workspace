@@ -1,31 +1,129 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>配達報酬集計表</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4月 配達報酬管理シート</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background-color: #f8f9fa; }
-        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        table { border-collapse: collapse; width: 100%; background: white; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #007bff; color: white; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
+        body { font-family: sans-serif; padding: 15px; background-color: #f0f2f5; font-size: 16px; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h1 { font-size: 1.1rem; color: #007bff; margin: 0 0 15px 0; border-bottom: 2px solid #007bff; }
+        .input-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .input-row label { flex: 1; font-weight: bold; font-size: 0.9rem; }
+        .input-row input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 1rem; font-weight: bold; margin-top: 10px; }
+        .summary-box { background: #343a40; color: white; padding: 15px; border-radius: 10px; margin-top: 20px; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .grand-total { font-size: 1.4rem; color: #ffc107; border-top: 1px solid #555; padding-top: 5px; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; font-size: 0.8rem; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #e9ecef; }
+        .delete-btn { color: red; border: none; background: none; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>配達報酬集計表</h1>
-    <table>
+
+<div class="card">
+    <h1>本日の入力</h1>
+    <div class="input-row">
+        <label>日付</label>
+        <input type="date" id="date">
+    </div>
+    <div class="input-row">
+        <label>宅急便 (170円)</label>
+        <input type="number" id="taku" placeholder="個数">
+    </div>
+    <div class="input-row">
+        <label>ネコポス (60円)</label>
+        <input type="number" id="neko" placeholder="個数">
+    </div>
+    <button onclick="saveData()">データを保存する</button>
+</div>
+
+<div class="summary-box">
+    <div class="summary-row"><span>今月の宅急便合計:</span><span id="total-taku-count">0</span>個</div>
+    <div class="summary-row"><span>今月のネコポス合計:</span><span id="total-neko-count">0</span>個</div>
+    <div class="summary-row class="grand-total"">
+        <strong>今月の総報酬額:</strong>
+        <strong id="month-total">0</strong>円
+    </div>
+</div>
+
+<table id="log-table">
+    <thead>
         <tr>
             <th>日付</th>
-            <th>個数</th>
-            <th>報酬額（見込み）</th>
+            <th>宅</th>
+            <th>ネ</th>
+            <th>日計</th>
+            <th>消</th>
         </tr>
-        <tr>
-            <td>2026/04/07</td>
-            <td>-- 件</td>
-            <td>--- 円</td>
-        </tr>
-    </table>
-    <p style="margin-top: 20px; color: #666;">※ここからデータを増やしていく土台です。</p>
+    </thead>
+    <tbody id="log-body"></tbody>
+</table>
+
+<script>
+    // ページ読み込み時にデータを表示
+    window.onload = function() {
+        document.getElementById('date').valueAsDate = new Date();
+        displayLogs();
+    };
+
+    function saveData() {
+        const date = document.getElementById('date').value;
+        const taku = parseInt(document.getElementById('taku').value) || 0;
+        const neko = parseInt(document.getElementById('neko').value) || 0;
+        const subtotal = (taku * 170) + (neko * 60);
+
+        if(!date) return alert("日付を入れてください");
+
+        const newData = { date, taku, neko, subtotal };
+        let logs = JSON.parse(localStorage.getItem('deliveryLogs')) || [];
+        logs.push(newData);
+        localStorage.setItem('deliveryLogs', JSON.stringify(logs));
+
+        // 入力欄をリセット
+        document.getElementById('taku').value = "";
+        document.getElementById('neko').value = "";
+        displayLogs();
+    }
+
+    function displayLogs() {
+        let logs = JSON.parse(localStorage.getItem('deliveryLogs')) || [];
+        const body = document.getElementById('log-body');
+        body.innerHTML = "";
+
+        let totalTaku = 0, totalNeko = 0, monthTotal = 0;
+
+        logs.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((log, index) => {
+            totalTaku += log.taku;
+            totalNeko += log.neko;
+            monthTotal += log.subtotal;
+
+            body.innerHTML += `
+                <tr>
+                    <td>${log.date.substring(5)}</td>
+                    <td>${log.taku}</td>
+                    <td>${log.neko}</td>
+                    <td>${log.subtotal.toLocaleString()}</td>
+                    <td><button class="delete-btn" onclick="deleteLog(${index})">×</button></td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('total-taku-count').innerText = totalTaku;
+        document.getElementById('total-neko-count').innerText = totalNeko;
+        document.getElementById('month-total').innerText = monthTotal.toLocaleString();
+    }
+
+    function deleteLog(index) {
+        let logs = JSON.parse(localStorage.getItem('deliveryLogs')) || [];
+        logs.splice(index, 1);
+        localStorage.setItem('deliveryLogs', JSON.stringify(logs));
+        displayLogs();
+    }
+</script>
+
 </body>
 </html>
