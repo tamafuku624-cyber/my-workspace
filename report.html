@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -25,17 +24,17 @@
 <body>
 
 <div class="card">
-    <h1>本日の入力</h1>
+    <h1>本日の成果を入力</h1>
     <div class="input-row">
         <label>日付</label>
         <input type="date" id="date">
     </div>
     <div class="input-row">
-        <label>宅急便 (170円)</label>
+        <label>📦 宅急便 (170円)</label>
         <input type="number" id="taku" placeholder="個数">
     </div>
     <div class="input-row">
-        <label>ネコポス (60円)</label>
+        <label>✉️ ネコポス (60円)</label>
         <input type="number" id="neko" placeholder="個数">
     </div>
     <button onclick="saveData()">データを保存する</button>
@@ -44,7 +43,7 @@
 <div class="summary-box">
     <div class="summary-row"><span>今月の宅急便合計:</span><span id="total-taku-count">0</span>個</div>
     <div class="summary-row"><span>今月のネコポス合計:</span><span id="total-neko-count">0</span>個</div>
-    <div class="summary-row class="grand-total"">
+    <div class="summary-row grand-total">
         <strong>今月の総報酬額:</strong>
         <strong id="month-total">0</strong>円
     </div>
@@ -56,7 +55,7 @@
             <th>日付</th>
             <th>宅</th>
             <th>ネ</th>
-            <th>日計</th>
+            <th>計(円)</th>
             <th>消</th>
         </tr>
     </thead>
@@ -64,7 +63,7 @@
 </table>
 
 <script>
-    // ページ読み込み時にデータを表示
+    // ページ読み込み時に実行
     window.onload = function() {
         document.getElementById('date').valueAsDate = new Date();
         displayLogs();
@@ -74,6 +73,8 @@
         const date = document.getElementById('date').value;
         const taku = parseInt(document.getElementById('taku').value) || 0;
         const neko = parseInt(document.getElementById('neko').value) || 0;
+        
+        // ここで単価計算！
         const subtotal = (taku * 170) + (neko * 60);
 
         if(!date) return alert("日付を入れてください");
@@ -83,7 +84,7 @@
         logs.push(newData);
         localStorage.setItem('deliveryLogs', JSON.stringify(logs));
 
-        // 入力欄をリセット
+        // 入力欄リセット
         document.getElementById('taku').value = "";
         document.getElementById('neko').value = "";
         displayLogs();
@@ -96,6 +97,7 @@
 
         let totalTaku = 0, totalNeko = 0, monthTotal = 0;
 
+        // 日付順に並べ替え
         logs.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((log, index) => {
             totalTaku += log.taku;
             totalNeko += log.neko;
