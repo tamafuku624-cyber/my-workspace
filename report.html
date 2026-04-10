@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4月 配達報酬管理シート</title>
+    <title>配達報酬・月別管理シート</title>
     <style>
         body { font-family: sans-serif; padding: 15px; background-color: #f0f2f5; font-size: 16px; }
         .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        h1 { font-size: 1.1rem; color: #007bff; margin: 0 0 15px 0; border-bottom: 2px solid #007bff; }
+        h1 { font-size: 1.1rem; color: #007bff; margin: 0 0 10px 0; border-bottom: 2px solid #007bff; }
+        .month-select { margin-bottom: 15px; font-weight: bold; }
+        #view-month { padding: 8px; font-size: 1rem; border-radius: 5px; width: 100%; margin-top: 5px; }
         .input-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
-        .input-row label { flex: 1; font-weight: bold; font-size: 0.9rem; }
+        .input-row label { flex: 1; font-weight: bold; font-size: 0.85rem; }
         .input-row input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; }
         button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 1rem; font-weight: bold; margin-top: 10px; }
         .summary-box { background: #343a40; color: white; padding: 15px; border-radius: 10px; margin-top: 20px; }
@@ -18,33 +20,41 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; font-size: 0.8rem; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
         th { background: #e9ecef; }
-        .delete-btn { color: red; border: none; background: none; font-weight: bold; }
+        .delete-btn { color: red; border: none; background: none; font-weight: bold; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>本日の成果を入力</h1>
+    <h1>📅 月を選択</h1>
+    <div class="month-select">
+        <input type="month" id="view-month" onchange="displayLogs()">
+    </div>
+</div>
+
+<div class="card">
+    <h1>📦 本日の入力</h1>
     <div class="input-row">
         <label>日付</label>
         <input type="date" id="date">
     </div>
     <div class="input-row">
-        <label>📦 宅急便 (170円)</label>
+        <label>宅急便(170円)</label>
         <input type="number" id="taku" placeholder="個数">
     </div>
     <div class="input-row">
-        <label>✉️ ネコポス (60円)</label>
+        <label>ネコポス(60円)</label>
         <input type="number" id="neko" placeholder="個数">
     </div>
     <button onclick="saveData()">データを保存する</button>
 </div>
 
 <div class="summary-box">
-    <div class="summary-row"><span>今月の宅急便合計:</span><span id="total-taku-count">0</span>個</div>
-    <div class="summary-row"><span>今月のネコポス合計:</span><span id="total-neko-count">0</span>個</div>
+    <div id="display-month-label" style="text-align: center; margin-bottom: 10px; color: #ffc107;"></div>
+    <div class="summary-row"><span>宅急便合計:</span><span id="total-taku-count">0</span>個</div>
+    <div class="summary-row"><span>ネコポス合計:</span><span id="total-neko-count">0</span>個</div>
     <div class="summary-row grand-total">
-        <strong>今月の総報酬額:</strong>
+        <strong>総報酬額:</strong>
         <strong id="month-total">0</strong>円
     </div>
 </div>
@@ -55,7 +65,7 @@
             <th>日付</th>
             <th>宅</th>
             <th>ネ</th>
-            <th>計(円)</th>
+            <th>報酬</th>
             <th>消</th>
         </tr>
     </thead>
@@ -64,7 +74,11 @@
 
 <script>
     window.onload = function() {
-        document.getElementById('date').valueAsDate = new Date();
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = ("0" + (now.getMonth() + 1)).slice(-2);
+        document.getElementById('view-month').value = `${year}-${month}`;
+        document.getElementById('date').valueAsDate = now;
         displayLogs();
     };
 
@@ -72,8 +86,6 @@
         const date = document.getElementById('date').value;
         const taku = parseInt(document.getElementById('taku').value) || 0;
         const neko = parseInt(document.getElementById('neko').value) || 0;
-        
-        // 正確に単価「円」で計算しています
         const subtotal = (taku * 170) + (neko * 60);
 
         if(!date) return alert("日付を入れてください");
@@ -89,35 +101,51 @@
     }
 
     function displayLogs() {
+        const selectedMonth = document.getElementById('view-month').value; // "YYYY-MM"
+        document.getElementById('display-month-label').innerText = selectedMonth + " 分の集計";
+
         let logs = JSON.parse(localStorage.getItem('deliveryLogs')) || [];
         const body = document.getElementById('log-body');
         body.innerHTML = "";
+
         let totalTaku = 0, totalNeko = 0, monthTotal = 0;
 
+        // 選択された月だけのデータを抽出して表示
         logs.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((log, index) => {
-            totalTaku += log.taku;
-            totalNeko += log.neko;
-            monthTotal += log.subtotal;
-            body.innerHTML += `
-                <tr>
-                    <td>${log.date.substring(5)}</td>
-                    <td>${log.taku}</td>
-                    <td>${log.neko}</td>
-                    <td>${log.subtotal.toLocaleString()}</td>
-                    <td><button class="delete-btn" onclick="deleteLog(${index})">×</button></td>
-                </tr>`;
+            if (log.date.startsWith(selectedMonth)) {
+                totalTaku += log.taku;
+                totalNeko += log.neko;
+                monthTotal += log.subtotal;
+
+                body.innerHTML += `
+                    <tr>
+                        <td>${log.date.substring(5)}</td>
+                        <td>${log.taku}</td>
+                        <td>${log.neko}</td>
+                        <td>${log.subtotal.toLocaleString()}</td>
+                        <td><button class="delete-btn" onclick="deleteLog('${log.date}', ${log.taku}, ${log.neko})">×</button></td>
+                    </tr>
+                `;
+            }
         });
+
         document.getElementById('total-taku-count').innerText = totalTaku;
         document.getElementById('total-neko-count').innerText = totalNeko;
         document.getElementById('month-total').innerText = monthTotal.toLocaleString();
     }
 
-    function deleteLog(index) {
+    function deleteLog(date, taku, neko) {
+        if(!confirm("この記録を消してもよろしいですか？")) return;
         let logs = JSON.parse(localStorage.getItem('deliveryLogs')) || [];
-        logs.splice(index, 1);
-        localStorage.setItem('deliveryLogs', JSON.stringify(logs));
-        displayLogs();
+        // 日付・宅急便数・ネコポス数が一致する最初の1件を削除
+        const index = logs.findIndex(l => l.date === date && l.taku === taku && l.neko === neko);
+        if (index > -1) {
+            logs.splice(index, 1);
+            localStorage.setItem('deliveryLogs', JSON.stringify(logs));
+            displayLogs();
+        }
     }
 </script>
+
 </body>
 </html>
